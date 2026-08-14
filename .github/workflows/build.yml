@@ -21,17 +21,22 @@ jobs:
     - name: Install System Dependencies
       run: |
         sudo apt update
-        sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libffi-dev libssl-dev build-essential
+        # Yahan Java 11 kar diya hai jo Android tools ke liye best hai
+        sudo apt install -y git zip unzip openjdk-11-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libffi-dev libssl-dev build-essential
         pip install --upgrade pip
         pip install "cython<3.0.0" buildozer
-    - name: Build APK with Buildozer
+
+    - name: Auto-Fix Settings & Build APK
       run: |
-        # Agar buildozer.spec nahi hai toh naya bana lo aur settings update kar lo
         if [ ! -f buildozer.spec ]; then
           buildozer init
-          sed -i 's/requirements = .*/requirements = python3,pygame/' buildozer.spec
-          sed -i 's/android.archs = .*/android.archs = arm64-v8a/' buildozer.spec
         fi
+        
+        # Yeh commands bina aapse pooche saari permissions aur settings auto-fix kar dengi
+        sed -i 's/.*requirements = .*/requirements = python3,pygame/' buildozer.spec
+        sed -i 's/.*android.archs = .*/android.archs = arm64-v8a/' buildozer.spec
+        sed -i 's/.*android.accept_sdk_license.*/android.accept_sdk_license = True/' buildozer.spec
+        
         buildozer -v android debug
 
     - name: Upload APK Artifact
