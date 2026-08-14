@@ -1,10 +1,10 @@
 name: Build Android APK
 
 on:
-  workflow_dispatch:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   build:
@@ -17,12 +17,12 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Clean previous build
+      - name: Clean Build
         run: |
           rm -rf .buildozer
           rm -rf bin
 
-      - name: Create buildozer.spec
+      - name: Create Buildozer Spec
         run: |
           cat > buildozer.spec <<'EOF'
           [app]
@@ -51,16 +51,12 @@ jobs:
           android.accept_sdk_license = True
           EOF
 
-      - name: Install Android SDK components
+      - name: Check Android SDK
         run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager "platform-tools"
-          sdkmanager "platforms;android-33"
-          sdkmanager "build-tools;33.0.2"
-
-      - name: Check AIDL
-        run: |
-          find "$ANDROIDSDK" -name aidl -type f -print
+          echo "ANDROIDSDK=$ANDROIDSDK"
+          echo "ANDROIDNDK=$ANDROIDNDK"
+          echo "ANDROIDAPI=$ANDROIDAPI"
+          find "$ANDROIDSDK" -type f -name aidl -print 2>/dev/null || true
 
       - name: Build APK
         env:
