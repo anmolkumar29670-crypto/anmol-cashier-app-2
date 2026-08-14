@@ -21,22 +21,47 @@ jobs:
     - name: Install System Dependencies
       run: |
         sudo apt update
-        # Yahan Java 11 kar diya hai jo Android tools ke liye best hai
         sudo apt install -y git zip unzip openjdk-11-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libffi-dev libssl-dev build-essential
         pip install --upgrade pip
         pip install "cython<3.0.0" buildozer
 
-    - name: Auto-Fix Settings & Build APK
+    - name: Fix buildozer.spec Safely & Build APK
       run: |
         if [ ! -f buildozer.spec ]; then
           buildozer init
         fi
-        
-        # Yeh commands bina aapse pooche saari permissions aur settings auto-fix kar dengi
-        sed -i 's/.*requirements = .*/requirements = python3,pygame/' buildozer.spec
-        sed -i 's/.*android.archs = .*/android.archs = arm64-v8a/' buildozer.spec
-        sed -i 's/.*android.accept_sdk_license.*/android.accept_sdk_license = True/' buildozer.spec
-        
+
+        # Duplicate options aur commented lines ko safely remove/update karne ke liye Python script
+        python3 -c "
+        import re
+        with open('buildozer.spec', 'r') as f:
+            lines = f.readlines()
+
+        cleaned = []
+        req_added = False
+        arch_added = False
+        license_added = False
+
+        for line in lines:
+            if re.match(r'^\s*#?\s*requirements\s*=', line):
+                if not req_added:
+                    cleaned.append('requirements = python3,pygame\n')
+                    req_added = True
+            elif re.match(r'^\s*#?\s*android\.archs\s*=', line):
+                if not arch_added:
+                    cleaned.append('android.archs = arm64-v8a\n')
+                    arch_added = True
+            elif re.match(r'^\s*#?\s*android\.accept_sdk_license\s*=', line):
+                if not license_added:
+                    cleaned.append('android.accept_sdk_license = True\n')
+                    license_added = True
+            else:
+                cleaned.append(line)
+
+        with open('buildozer.spec', 'w') as f:
+            f.writelines(cleaned)
+        "
+
         buildozer -v android debug
 
     - name: Upload APK Artifact
