@@ -10,25 +10,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    container:
-      image: kivy/buildozer:latest
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Clean Build
+      - name: Free Runner Disk Space
         run: |
-          rm -rf .buildozer
-          rm -rf bin
-
-      - name: Install Android Build-Tools & AIDL
-        run: |
-          # Container ke SDK manager se build-tools 33.0.2 aur licenses auto-accept karo
-          if [ -d "$ANDROIDSDK" ]; then
-            yes | $ANDROIDSDK/cmdline-tools/latest/bin/sdkmanager --licenses || true
-            $ANDROIDSDK/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33" || true
-          fi
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
 
       - name: Create Buildozer Spec
         run: |
@@ -43,7 +34,7 @@ jobs:
 
           version = 1.0
 
-          requirements = python3,pygame
+          requirements = python3==3.11.5,pygame
 
           orientation = landscape
           fullscreen = 0
@@ -61,11 +52,13 @@ jobs:
           android.skip_update = False
           EOF
 
-      - name: Build APK
-        env:
-          BUILDOZER_WARN_ON_ROOT: "0"
+      - name: Build APK with Docker
         run: |
-          yes | buildozer -v android debug
+          docker run --rm \
+            -v ${{ github.workspace }}:/home/user/hostpython \
+            -w /home/user/hostpython \
+            kivy/buildozer:latest \
+            bash -c "yes | buildozer -v android debug"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
