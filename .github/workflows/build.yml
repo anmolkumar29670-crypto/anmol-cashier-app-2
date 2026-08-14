@@ -7,17 +7,17 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # Stable environment for Android NDK & Pygame
 
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Set up Java 11
+    - name: Set up Java 17
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
-        java-version: '11'
+        java-version: '17'
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -27,52 +27,41 @@ jobs:
     - name: Install System Dependencies
       run: |
         sudo apt update
-        sudo apt install -y git zip unzip python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libffi-dev libssl-dev build-essential
+        sudo apt install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libffi-dev libssl-dev build-essential ccache clang lld cmake ninja-build
         pip install --upgrade pip
-        pip install "cython<3.0.0" buildozer
+        pip install "cython==0.29.33" buildozer==1.5.0
 
-    - name: Fix NDK & buildozer.spec Safely
+    - name: Generate Clean buildozer.spec
       run: |
-        if [ ! -f buildozer.spec ]; then
-          buildozer init
-        fi
+        cat << 'EOF' > buildozer.spec
+        [app]
+        title = Anmol Cashier
+        package.name = anmolcashier
+        package.domain = org.anmol
+        source.dir = .
+        source.include_exts = py,png,jpg,kv,atlas,ttf,wav,mp3
+        version = 1.0
+        requirements = python3,pygame
+        orientation = portrait
+        osx.kivy_version = 1.9.1
+        fullscreen = 0
 
-        # NDK 25b enforce karna aur baki settings fix karna
-        python3 -c "
-        import re
-        with open('buildozer.spec', 'r') as f:
-            lines = f.readlines()
+        [buildozer]
+        log_level = 2
+        warn_on_root = 1
 
-        cleaned = []
-        req_added, arch_added, license_added, ndk_added = False, False, False, False
+        [android]
+        android.api = 33
+        android.minapi = 21
+        android.ndk = 25b
+        android.ndk_api = 21
+        android.archs = arm64-v8a
+        android.accept_sdk_license = True
+        android.skip_update = False
+        EOF
 
-        for line in lines:
-            if re.match(r'^\s*#?\s*requirements\s*=', line):
-                if not req_added:
-                    cleaned.append('requirements = python3,pygame\n')
-                    req_added = True
-            elif re.match(r'^\s*#?\s*android\.archs\s*=', line):
-                if not arch_added:
-                    cleaned.append('android.archs = arm64-v8a\n')
-                    arch_added = True
-            elif re.match(r'^\s*#?\s*android\.accept_sdk_license\s*=', line):
-                if not license_added:
-                    cleaned.append('android.accept_sdk_license = True\n')
-                    license_added = True
-            elif re.match(r'^\s*#?\s*android\.ndk\s*=', line):
-                if not ndk_added:
-                    cleaned.append('android.ndk = 25b\n')
-                    ndk_added = True
-            else:
-                cleaned.append(line)
-
-        if not ndk_added:
-            cleaned.append('android.ndk = 25b\n')
-
-        with open('buildozer.spec', 'w') as f:
-            f.writelines(cleaned)
-        "
-
+    - name: Build APK with Buildozer
+      run: |
         buildozer -v android debug
 
     - name: Upload APK Artifact
