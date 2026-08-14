@@ -13,11 +13,11 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Set up Java 11
+    - name: Set up Java 17
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin'
-        java-version: '11'
+        java-version: '17'
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -31,11 +31,18 @@ jobs:
         pip install --upgrade pip
         pip install "cython==0.29.33" buildozer==1.5.0
 
-    - name: Accept Android SDK Licenses
+    - name: Force Symlink System SDK & Build-Tools (Fixes Aidl Error)
       run: |
+        # Buildozer jahan hardcoded build-tools dhoondhta hai, wahan system SDK ka direct link bana do
+        mkdir -p ~/.buildozer/android/platform/android-sdk
+        ln -sf /usr/local/lib/android/sdk/build-tools ~/.buildozer/android/platform/android-sdk/build-tools
+        ln -sf /usr/local/lib/android/sdk/platforms ~/.buildozer/android/platform/android-sdk/platforms
+        ln -sf /usr/local/lib/android/sdk/platform-tools ~/.buildozer/android/platform/android-sdk/platform-tools
+        
+        # Licenses auto-accept
         yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-    - name: Generate buildozer.spec (Using System Android SDK)
+    - name: Generate buildozer.spec
       run: |
         cat << 'EOF' > buildozer.spec
         [app]
@@ -54,7 +61,6 @@ jobs:
         warn_on_root = 1
 
         [android]
-        android.sdk_path = /usr/local/lib/android/sdk
         android.api = 33
         android.minapi = 21
         android.ndk = 25b
