@@ -22,6 +22,14 @@ jobs:
           rm -rf .buildozer
           rm -rf bin
 
+      - name: Install Android Build-Tools & AIDL
+        run: |
+          # Container ke SDK manager se build-tools 33.0.2 aur licenses auto-accept karo
+          if [ -d "$ANDROIDSDK" ]; then
+            yes | $ANDROIDSDK/cmdline-tools/latest/bin/sdkmanager --licenses || true
+            $ANDROIDSDK/cmdline-tools/latest/bin/sdkmanager "build-tools;33.0.2" "platforms;android-33" || true
+          fi
+
       - name: Create Buildozer Spec
         run: |
           cat > buildozer.spec <<'EOF'
@@ -47,26 +55,20 @@ jobs:
           [android]
           android.api = 33
           android.minapi = 24
+          android.build_tools_version = 33.0.2
           android.archs = arm64-v8a
           android.accept_sdk_license = True
+          android.skip_update = False
           EOF
-
-      - name: Check Android SDK
-        run: |
-          echo "ANDROIDSDK=$ANDROIDSDK"
-          echo "ANDROIDNDK=$ANDROIDNDK"
-          echo "ANDROIDAPI=$ANDROIDAPI"
-          find "$ANDROIDSDK" -type f -name aidl -print 2>/dev/null || true
 
       - name: Build APK
         env:
           BUILDOZER_WARN_ON_ROOT: "0"
         run: |
-          buildozer -v android debug
+          yes | buildozer -v android debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: AnmolCashier-APK
           path: bin/*.apk
-          
