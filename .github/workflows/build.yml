@@ -1,32 +1,43 @@
 name: Build Android APK
 
 on:
-  push:
-    branches: [ "main", "master" ]
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     container:
-      image: kivy/buildozer
+      image: kivy/buildozer:latest
 
     steps:
-      - name: Checkout Code
+      - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Clean old Buildozer files
+        run: |
+          rm -rf .buildozer
+          rm -rf bin
 
       - name: Create buildozer.spec
         run: |
-          cat << 'EOF' > buildozer.spec
+          cat > buildozer.spec <<'EOF'
           [app]
           title = Anmol Cashier
           package.name = anmolcashier
           package.domain = org.anmol
+
           source.dir = .
-          source.include_exts = py,png,jpg,kv,atlas,ttf,wav,mp3
+          source.include_exts = py,png,jpg,jpeg,ttf,wav,mp3
+
           version = 1.0
+
           requirements = python3,pygame
-          orientation = portrait
+
+          orientation = landscape
           fullscreen = 0
 
           [buildozer]
@@ -35,19 +46,22 @@ jobs:
 
           [android]
           android.api = 33
-          android.minapi = 21
-          android.ndk = 25b
-          android.ndk_api = 21
+          android.minapi = 24
           android.archs = arm64-v8a
           android.accept_sdk_license = True
-          android.skip_update = False
           EOF
 
-      - name: Build APK with Buildozer
+      - name: Show configuration
         run: |
-          yes | buildozer -v android debug
+          cat buildozer.spec
 
-      - name: Upload APK Artifact
+      - name: Build APK
+        env:
+          BUILDOZER_WARN_ON_ROOT: "0"
+        run: |
+          buildozer -v android debug
+
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: AnmolCashier-APK
