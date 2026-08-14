@@ -31,16 +31,25 @@ jobs:
         pip install --upgrade pip
         pip install "cython==0.29.33" buildozer==1.5.0
 
-    - name: Force Symlink System SDK & Build-Tools (Fixes Aidl Error)
+    - name: Complete System SDK & sdkmanager Setup
       run: |
-        # Buildozer jahan hardcoded build-tools dhoondhta hai, wahan system SDK ka direct link bana do
+        # Reset previous cache
+        rm -rf ~/.buildozer
         mkdir -p ~/.buildozer/android/platform/android-sdk
-        ln -sf /usr/local/lib/android/sdk/build-tools ~/.buildozer/android/platform/android-sdk/build-tools
-        ln -sf /usr/local/lib/android/sdk/platforms ~/.buildozer/android/platform/android-sdk/platforms
-        ln -sf /usr/local/lib/android/sdk/platform-tools ~/.buildozer/android/platform/android-sdk/platform-tools
-        
-        # Licenses auto-accept
-        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
+        # Link all system SDK folders
+        ln -s /usr/local/lib/android/sdk/build-tools ~/.buildozer/android/platform/android-sdk/
+        ln -s /usr/local/lib/android/sdk/cmdline-tools ~/.buildozer/android/platform/android-sdk/
+        ln -s /usr/local/lib/android/sdk/platforms ~/.buildozer/android/platform/android-sdk/
+        ln -s /usr/local/lib/android/sdk/platform-tools ~/.buildozer/android/platform/android-sdk/
+        ln -s /usr/local/lib/android/sdk/licenses ~/.buildozer/android/platform/android-sdk/
+
+        # Fix legacy 'tools/bin/sdkmanager' path expected by Buildozer
+        mkdir -p ~/.buildozer/android/platform/android-sdk/tools
+        ln -s /usr/local/lib/android/sdk/cmdline-tools/latest/bin ~/.buildozer/android/platform/android-sdk/tools/bin
+
+        # Auto-accept all SDK licenses
+        yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
     - name: Generate buildozer.spec
       run: |
