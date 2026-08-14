@@ -13,6 +13,12 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
+    - name: Set up Java 11
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '11'
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -21,26 +27,24 @@ jobs:
     - name: Install System Dependencies
       run: |
         sudo apt update
-        sudo apt install -y git zip unzip openjdk-11-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libffi-dev libssl-dev build-essential
+        sudo apt install -y git zip unzip python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libffi-dev libssl-dev build-essential
         pip install --upgrade pip
         pip install "cython<3.0.0" buildozer
 
-    - name: Fix buildozer.spec Safely & Build APK
+    - name: Fix NDK & buildozer.spec Safely
       run: |
         if [ ! -f buildozer.spec ]; then
           buildozer init
         fi
 
-        # Duplicate options aur commented lines ko safely remove/update karne ke liye Python script
+        # NDK 25b enforce karna aur baki settings fix karna
         python3 -c "
         import re
         with open('buildozer.spec', 'r') as f:
             lines = f.readlines()
 
         cleaned = []
-        req_added = False
-        arch_added = False
-        license_added = False
+        req_added, arch_added, license_added, ndk_added = False, False, False, False
 
         for line in lines:
             if re.match(r'^\s*#?\s*requirements\s*=', line):
@@ -55,8 +59,15 @@ jobs:
                 if not license_added:
                     cleaned.append('android.accept_sdk_license = True\n')
                     license_added = True
+            elif re.match(r'^\s*#?\s*android\.ndk\s*=', line):
+                if not ndk_added:
+                    cleaned.append('android.ndk = 25b\n')
+                    ndk_added = True
             else:
                 cleaned.append(line)
+
+        if not ndk_added:
+            cleaned.append('android.ndk = 25b\n')
 
         with open('buildozer.spec', 'w') as f:
             f.writelines(cleaned)
