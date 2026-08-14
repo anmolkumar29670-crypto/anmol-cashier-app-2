@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: kivy/buildozer
 
     steps:
       - name: Checkout Code
@@ -41,11 +43,9 @@ jobs:
           android.skip_update = False
           EOF
 
-      - name: Build APK (Pre-packaged Environment)
-        uses: ArtemSashcheka/buildozer-action@v1.2.0
-        with:
-          command: buildozer -v android debug
-          buildozer_version: master
+      - name: Build APK with Buildozer
+        run: |
+          buildozer -v android debug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
