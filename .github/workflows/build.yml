@@ -14,10 +14,10 @@ jobs:
       image: kivy/buildozer:latest
 
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Clean old Buildozer files
+      - name: Clean previous build
         run: |
           rm -rf .buildozer
           rm -rf bin
@@ -51,9 +51,16 @@ jobs:
           android.accept_sdk_license = True
           EOF
 
-      - name: Show configuration
+      - name: Install Android SDK components
         run: |
-          cat buildozer.spec
+          yes | sdkmanager --licenses || true
+          sdkmanager "platform-tools"
+          sdkmanager "platforms;android-33"
+          sdkmanager "build-tools;33.0.2"
+
+      - name: Check AIDL
+        run: |
+          find "$ANDROIDSDK" -name aidl -type f -print
 
       - name: Build APK
         env:
@@ -66,3 +73,4 @@ jobs:
         with:
           name: AnmolCashier-APK
           path: bin/*.apk
+          
