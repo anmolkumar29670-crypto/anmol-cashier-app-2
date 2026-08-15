@@ -21,6 +21,17 @@ jobs:
           sudo rm -rf /opt/ghc
           sudo rm -rf "/usr/local/share/boost"
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+          pip install --upgrade buildozer cython
+
       - name: Create Buildozer Spec
         run: |
           cat > buildozer.spec <<'EOF'
@@ -34,14 +45,14 @@ jobs:
 
           version = 1.0
 
-          requirements = python3,pygame
+          requirements = python3,hostpython3,pygame
 
           orientation = landscape
           fullscreen = 0
 
           [buildozer]
           log_level = 2
-          warn_on_root = 0
+          warn_on_root = 1
 
           [android]
           android.api = 33
@@ -51,16 +62,11 @@ jobs:
           android.skip_update = False
           EOF
 
-      - name: Build APK with Docker
+      - name: Build APK with Buildozer
         run: |
-          docker run --rm \
-            --entrypoint /bin/bash \
-            -v ${{ github.workspace }}:/home/user/hostpython \
-            -w /home/user/hostpython \
-            kivy/buildozer:latest \
-            -c "yes | buildozer -v android debug"
+          yes | buildozer -v android debug
 
-      - name: Upload APK
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: AnmolCashier-APK
