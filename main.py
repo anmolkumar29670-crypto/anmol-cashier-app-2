@@ -5,9 +5,9 @@ import random
 import pygame
 
 # ---------------------------------------------------------
-# AUDIO PRE-INIT (Fixes audio issues on Android / PC)
+# AUDIO PRE-INIT (Fixed for Stereo Compatibility)
 # ---------------------------------------------------------
-pygame.mixer.pre_init(44100, -16, 1, 512)
+pygame.mixer.pre_init(44100, -16, 2, 512)
 pygame.init()
 pygame.mixer.init()
 
@@ -68,7 +68,7 @@ def api_print(items):
     return {"status": 200, "printed_total": total}
 
 # ---------------------------------------------------------
-# SOUND SYNTHESIZER
+# FIXED SOUND SYNTHESIZER (2-Channel Stereo Generation)
 # ---------------------------------------------------------
 def generate_tone(tone_freq, duration, volume=0.5, wave_type="sine"):
     sample_rate = 44100
@@ -87,7 +87,11 @@ def generate_tone(tone_freq, duration, volume=0.5, wave_type="sine"):
         if i > num_samples - 500: fade = (num_samples - i) / 500.0
 
         sample_val = int(32767 * volume * val * fade)
-        raw_bytes.extend(struct.pack('<h', sample_val))
+        packed_sample = struct.pack('<h', sample_val)
+        
+        # Stereo output (Left + Right channel duplicate)
+        raw_bytes.extend(packed_sample)
+        raw_bytes.extend(packed_sample)
         
     return pygame.mixer.Sound(buffer=bytes(raw_bytes))
 
