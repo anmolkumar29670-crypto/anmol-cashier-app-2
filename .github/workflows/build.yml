@@ -32,11 +32,6 @@ jobs:
           pip install --upgrade pip setuptools
           pip install "cython==0.29.36" "buildozer==1.5.0"
 
-      - name: Clean Old NDK Cache
-        run: |
-          rm -rf ~/.buildozer
-          rm -rf .buildozer
-
       - name: Create Bulletproof Buildozer Spec
         run: |
           cat > buildozer.spec <<'EOF'
@@ -62,7 +57,7 @@ jobs:
           android.api = 33
           android.minapi = 24
           android.ndk = 25b
-          android.ndk_api = 24
+          android.build_tools_version = 33.0.2
           android.archs = arm64-v8a
           android.accept_sdk_license = True
           android.skip_update = False
@@ -77,4 +72,3 @@ jobs:
         with:
           name: AnmolCashier-APK
           path: bin/*.apk
-          
