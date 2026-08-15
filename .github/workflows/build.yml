@@ -28,11 +28,11 @@ jobs:
       - name: Install System Dependencies & Pin Cython
         run: |
           sudo apt-get update
-          sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo5 cmake libffi-dev libssl-dev
+          sudo apt-get install -y git zip unzip openjdk-17-jdk python3-pip autoconf libtool pkg-config zlib1g-dev libncurses-dev cmake libffi-dev libssl-dev
           pip install --upgrade pip
           pip install "cython<3.0.0" buildozer
 
-      - name: Create Bulletproof Buildozer Spec
+      - name: Create Buildozer Spec
         run: |
           cat > buildozer.spec <<'EOF'
           [app]
